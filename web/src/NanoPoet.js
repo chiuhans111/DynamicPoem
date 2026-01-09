@@ -8,11 +8,6 @@ export class NanoPoet {
 
         // Initialize Logic immediately (synchronous part)
         this.chars = this.config.chars;
-
-        // DEBUG: Check length
-        console.log("DEBUG: CHARS LENGTH =", this.chars.length);
-        console.log("DEBUG: CHARS =", this.chars);
-
         this.vocabSize = this.chars.length + 1;
         this.seqLen = this.config.seqLen;
         this.unkId = this.chars.length;
