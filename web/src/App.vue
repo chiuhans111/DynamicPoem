@@ -10,12 +10,14 @@ const isFinished = ref(false);
 const status = ref("Initializing...");
 
 const width = 20;
-const height = 20;
+const height = 10;
 
 const N = width * height;
 
 let text = "#".repeat(N);
 const life = ref(new Array(N).fill(0));
+const margin = 1;
+const M = poet.seqLen - margin * 2;
 
 const loop = async () => {
   try {
@@ -37,8 +39,6 @@ const loop = async () => {
 
     // find subsequence length = poet.seqLen contains the most '#' and process that part
 
-    const margin = 3;
-    const M = poet.seqLen - margin * 2;
     let count = 0;
     let maxIndex = 0;
     let maxValue = -1;
@@ -52,6 +52,8 @@ const loop = async () => {
       }
     }
 
+    maxIndex += Math.round(Math.random() * 10) - 5;
+
     let maxIndex0 = maxIndex - margin;
 
     let prefix = "";
@@ -61,21 +63,25 @@ const loop = async () => {
       prefix += " ";
     }
 
-    const subsequence =
-      prefix + new_text.slice(maxIndex0, maxIndex + M + margin);
-    new_text = "";
+    let subsequence = prefix + new_text.slice(maxIndex0, maxIndex + M + margin);
 
-    const result = (await poet.predict(subsequence)).slice(margin);
+    while (subsequence.length < M + margin * 2) {
+      subsequence += " ";
+    }
 
+    const result = (await poet.predict(subsequence)).slice(margin, margin + M);
+
+    maxIndex = Math.max(0, Math.min(maxIndex, text.length - M));
+    let replacement = "";
     for (let i = 0; i < M; i++) {
-      if (subsequence[i + margin] === "#" && result[i] !== "#") {
-        new_text += result[i];
+      if (subsequence[margin + i] === "#" && result[i] !== "#") {
+        replacement += result[i];
       } else {
-        new_text += text[i + maxIndex];
+        replacement += text[maxIndex + i];
       }
     }
 
-    text = text.slice(0, maxIndex) + new_text + text.slice(maxIndex + M);
+    text = text.slice(0, maxIndex) + replacement + text.slice(maxIndex + M);
 
     input.value = text;
   } catch (e) {
@@ -83,7 +89,7 @@ const loop = async () => {
   }
 
   // Schedule next iteration
-  if (!isFinished.value) setTimeout(loop, 0);
+  if (!isFinished.value) setTimeout(loop, 10);
 };
 
 onMounted(async () => {

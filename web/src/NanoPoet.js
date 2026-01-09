@@ -1,5 +1,5 @@
 import * as ort from 'onnxruntime-web';
-import config from '../../config.json';
+import config from './config.json';
 
 export class NanoPoet {
     constructor() {

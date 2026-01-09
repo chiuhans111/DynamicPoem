@@ -7,7 +7,7 @@ import os
 import json
 
 # CONFIGURATION
-with open("config.json", "r") as f:
+with open("./web/src/config.json", "r") as f:
     CONF = json.load(f)
 
 TEXT_FILE = "poem.txt"
