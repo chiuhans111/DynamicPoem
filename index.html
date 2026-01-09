@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>NanoPoet Text Interface</title>
+    <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+    <style>
+        body {
+            background: #f0f0f0;
+            color: #333;
+            font-family: monospace;
+            padding: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            font-family: inherit;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #333;
+            color: #fff;
+            border: none;
+        }
+
+        button:disabled {
+            background: #999;
+        }
+
+        #output {
+            margin-top: 20px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid #ddd;
+            min-height: 50px;
+            white-space: pre-wrap;
+        }
+
+        .status {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>NanoPoet Interface</h1>
+    <div id="status" class="status">Initializing Engine...</div>
+
+    <label>Input Text (Prompt):</label>
+    <textarea id="inputText" placeholder="Type something..."></textarea>
+
+    <button id="btnRun" disabled>Run Inference</button>
+
+    <h3>Output:</h3>
+    <div id="output"></div>
+
+    <script>
+        /**
+         * ============================================================
+         * 🧠 ENGINE LAYER (Pure Logic)
+         * ============================================================
+         * Wraps the ONNX model and tokenization into a clean class.
+         * No DOM manipulation here.
+         */
+        class NanoPoet {
+            constructor() {
+                // Must match Python training config exactly
+                this.chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ .,!?'\n—";
+                this.vocabSize = this.chars.length + 1;
+                this.seqLen = 64;
+
+                // Tokenizer Maps
+                this.charToId = {};
+                this.idToChar = {};
+                [...this.chars].forEach((c, i) => {
+                    this.charToId[c] = i;
+                    this.idToChar[i] = c;
+                });
+                this.unkId = this.chars.length;
+
+                this.session = null;
+            }
+
+            async load(modelPath = './model.onnx') {
+                try {
+                    this.session = await ort.InferenceSession.create(modelPath, {
+                        executionProviders: ['wasm']
+                    });
+                    return true;
+                } catch (e) {
+                    console.error("Failed to load model:", e);
+                    throw e;
+                }
+            }
+
+            /**
+             * Pure Function: String -> String
+             * Takes text, runs inference, returns completed text.
+             */
+            async predict(inputText) {
+                if (!this.session) throw new Error("Model not loaded");
+
+                // 1. Tokenize (Pad/Truncate)
+                const ids = new Int32Array(this.seqLen).fill(this.unkId);
+                for (let i = 0; i < Math.min(inputText.length, this.seqLen); i++) {
+                    const char = inputText[i];
+                    ids[i] = this.charToId[char] !== undefined ? this.charToId[char] : this.unkId;
+                }
+
+                // 2. Inference
+                // Note: BigInt64Array conversion is critical for ONNX Runtime Web
+                const bigIntIds = BigInt64Array.from(ids, x => BigInt(x));
+                const tensor = new ort.Tensor('int64', bigIntIds, [1, this.seqLen]);
+
+                const results = await this.session.run({ input_ids: tensor });
+                const logits = results.logits.data; // Float32Array
+
+                // 3. Detokenize (Greedy Decode)
+                let outputText = "";
+                for (let i = 0; i < this.seqLen; i++) {
+                    // Logic: For position `i` in output, we look at logits from `i-1`.
+                    // (Standard Causal LM shift)
+
+                    if (i === 0) {
+                        // First token cannot be predicted from "previous" in this context
+                        // Pass through the original token
+                        outputText += this.idToChar[ids[i]] || "";
+                        continue;
+                    }
+
+                    const logitsIndex = (i - 1) * this.vocabSize;
+
+                    // Find ArgMax
+                    let maxVal = -Infinity;
+                    let bestId = 0;
+                    for (let v = 0; v < this.vocabSize; v++) {
+                        const val = logits[logitsIndex + v];
+                        if (val > maxVal) {
+                            maxVal = val;
+                            bestId = v;
+                        }
+                    }
+
+                    outputText += this.idToChar[bestId] || "";
+                }
+
+                return outputText;
+            }
+        }
+
+        /**
+         * ============================================================
+         * 🖥️ UI LAYER
+         * ============================================================
+         * Handles DOM events and updates.
+         */
+        const poet = new NanoPoet();
+        const ui = {
+            status: document.getElementById('status'),
+            input: document.getElementById('inputText'),
+            btn: document.getElementById('btnRun'),
+            output: document.getElementById('output')
+        };
+
+        // 1. Initialize
+        poet.load().then(() => {
+            ui.status.innerText = "✅ Engine Ready";
+            ui.btn.disabled = false;
+            ui.btn.innerText = "Complete / Repair";
+        }).catch(err => {
+            ui.status.innerText = "❌ Error: " + err.message;
+        });
+
+        // 2. Event Listeners
+        ui.btn.onclick = async () => {
+            const text = ui.input.value;
+            ui.output.innerText = "Processing...";
+            ui.btn.disabled = true;
+
+            try {
+                const result = await poet.predict(text);
+                ui.output.innerText = result;
+            } catch (err) {
+                ui.output.innerText = "Error: " + err.message;
+            } finally {
+                ui.btn.disabled = false;
+            }
+        };
+    </script>
+</body>
+
+</html>
