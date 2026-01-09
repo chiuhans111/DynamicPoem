@@ -61,10 +61,10 @@ const loop = async () => {
   try {
     // update life
     for (let i = 0; i < N; i++) {
-      let accumulation = life.value[i];
-      if (i > 0) accumulation += life.value[i - 1];
-      if (i < N - 1) accumulation += life.value[i + 1];
-      life.value[i] = accumulation / 3 + 0.01;
+      let accumulation = 0.01;
+      if (i > 0) accumulation += (life.value[i - 1] - life.value[i]) * 0.1;
+      if (i < N - 1) accumulation += (life.value[i + 1] - life.value[i]) * 0.1;
+      life.value[i] += accumulation;
     }
 
     // when life is above a threshold, corresponding text will be replace with '#'
@@ -73,7 +73,7 @@ const loop = async () => {
       if (life.value[i] > 1) {
         life.value[i] = 1;
       }
-      if (Math.random() > life.value[i] && Math.random() < 0.015) {
+      if (Math.random() > life.value[i] + 1 - 0.1) {
         new_text += "#";
       } else {
         new_text += text[i];
@@ -121,7 +121,7 @@ const loop = async () => {
     maxIndex = Math.max(0, Math.min(maxIndex, text.length - M));
     let replacement = "";
     for (let i = 0; i < M; i++) {
-      if (subsequence[i + margin] !== "#" && Math.random() < 0.8) {
+      if (subsequence[i + margin] !== "#" && Math.random() < 0.5) {
         replacement += text[maxIndex + i];
         continue;
       }
@@ -170,6 +170,18 @@ onBeforeUnmount(() => {
     <div class="poem-grid">
       <div v-for="i in height" :key="i" class="row">
         <span
+          @mouseover="life[(i - 1) * width + (j - 1)] = -1"
+          @touchstart="life[(i - 1) * width + (j - 1)] = -1"
+          @touchmove.prevent="
+            (e) => {
+              const el = document.elementFromPoint(
+                e.touches[0].clientX,
+                e.touches[0].clientY
+              );
+              if (el?.dataset?.index) life[el.dataset.index] = 0;
+            }
+          "
+          :data-index="(i - 1) * width + (j - 1)"
           v-for="j in width"
           :key="j"
           class="char"
