@@ -9,29 +9,36 @@ const isFinished = ref(false);
 
 const status = ref("Initializing...");
 
-const width = 20;
-const height = 10;
+const width = 40;
+const height = 20;
 
 const N = width * height;
 
 let text = "#".repeat(N);
 const life = ref(new Array(N).fill(0));
-const margin = 1;
-const M = poet.seqLen - margin * 2;
+const margin = 3;
+const M = poet.seqLen - margin;
+
+let index0 = 0;
 
 const loop = async () => {
   try {
     // update life
     for (let i = 0; i < N; i++) {
-      life.value[i] += 0.1;
+      let accumulation = life.value[i];
+      if (i > 0) accumulation += life.value[i - 1];
+      if (i < N - 1) accumulation += life.value[i + 1];
+      life.value[i] = accumulation / 3 + 0.1;
     }
 
     // when life is above a threshold, corresponding text will be replace with '#'
     let new_text = "";
     for (let i = 0; i < N; i++) {
-      if (life.value[i] > 1 && Math.random() < 0.01) {
+      if (life.value[i] > 1) {
+        life.value[i] = 1;
+      }
+      if (Math.random() > life.value[i] && Math.random() < 0.15) {
         new_text += "#";
-        life.value[i] = 0;
       } else {
         new_text += text[i];
       }
@@ -52,7 +59,11 @@ const loop = async () => {
       }
     }
 
-    maxIndex += Math.round(Math.random() * 10) - 5;
+    if (count == 0) {
+      maxIndex = index0;
+      index0 += 1;
+      if (index0 > N - M) index0 = 0;
+    }
 
     let maxIndex0 = maxIndex - margin;
 
@@ -63,9 +74,9 @@ const loop = async () => {
       prefix += " ";
     }
 
-    let subsequence = prefix + new_text.slice(maxIndex0, maxIndex + M + margin);
+    let subsequence = prefix + new_text.slice(maxIndex0, maxIndex + M);
 
-    while (subsequence.length < M + margin * 2) {
+    while (subsequence.length < poet.seqLen) {
       subsequence += " ";
     }
 
@@ -74,8 +85,9 @@ const loop = async () => {
     maxIndex = Math.max(0, Math.min(maxIndex, text.length - M));
     let replacement = "";
     for (let i = 0; i < M; i++) {
-      if (subsequence[margin + i] === "#" && result[i] !== "#") {
+      if (result[i] !== "#") {
         replacement += result[i];
+        if (result[i] !== text[maxIndex + i]) life.value[maxIndex + i] = 0;
       } else {
         replacement += text[maxIndex + i];
       }
@@ -109,7 +121,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="container">
-    <h1>Nano Poem</h1>
+    <h1>Poem Diffuser</h1>
     <div class="status" :class="{ error: status.startsWith('Error') }">
       Status: {{ status }}
     </div>

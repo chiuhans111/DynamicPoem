@@ -1,1 +1,11 @@
-I work on algorithms late at night. I build simulators where two hundred thousand particles move in patterns. The system processes over eighteen hundred frames to show Chladni vibrations. I use recursive loops and Penrose tiling to create the visuals. The balls collide and follow the Fibonacci sequence. I use Blender geometry nodes and Lie algebra to control the camera movement. Eigen decomposition handles the zoom effect. AI generates the basic code, but I do the manual work to make it function. I enjoy the process of debugging and refining the logic. I write shaders in GLSL and use WebGL to render grids. I take photos of Hong Kong streets and create digital snow globes. I am now focusing more on emotions. I view this change as a global optimization problem. I try to stop overthinking and simply ask why things happen. I create simple animations with one color and share them online.
+Roses are red. Violets are blue. Uncaught TypeError on line 42.
+The simulation is running. The particles are moving. The loop is infinite.
+Hans Chiu came from optical engineering background, but he is also a creative coder who makes art, and now he is making camera algorithm.
+This algorithm creates poem.
+This algorithm trained on nano gemma.
+from transformers import GemmaConfig, GemmaForCausalLM.
+import torch
+import torch.nn as nn
+from transformers import GemmaConfig, GemmaForCausalLM
+import os
+import json

@@ -1,8 +1,8 @@
 {
     "chars": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ .,!?'",
-    "seqLen": 16,
-    "hiddenSize": 64,
-    "intermediateSize": 64,
+    "seqLen": 64,
+    "hiddenSize": 128,
+    "intermediateSize": 256,
     "numLayers": 4,
     "numHeads": 4
 }

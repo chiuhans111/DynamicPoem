@@ -1,9 +1,7 @@
 import torch
 import torch.nn as nn
 from transformers import GemmaConfig, GemmaForCausalLM
-import random
 import os
-
 import json
 
 # CONFIGURATION
@@ -17,7 +15,7 @@ CHARS = CONF["chars"]
 VOCAB_SIZE = len(CHARS) + 1
 
 # Training Hyperparameters
-BATCH_SIZE = 32
+BATCH_SIZE = 64
 STEPS = 1000
 LEARNING_RATE = 3e-4
 
