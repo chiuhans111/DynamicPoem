@@ -189,11 +189,12 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .container {
-  max-width: 800px;
+  max-width: 400px;
   margin: 0 auto;
   padding: 2rem;
   font-family: monospace;
   font-size: 15px;
+  margin-top: 5%;
 }
 
 h1 {

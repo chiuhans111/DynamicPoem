@@ -5,3 +5,7 @@ body {
   min-width: 320px;
   background-color: black;
 }
+
+#app {
+  width: 100%;
+}
