@@ -1,14 +1,1 @@
-I met a traveller from an antique land,
-Who said—“Two vast and trunkless legs of stone
-Stand in the desert. . . . Near them, on the sand,
-Half sunk a shattered visage lies, whose frown,
-And wrinkled lip, and sneer of cold command,
-Tell that its sculptor well those passions read
-Which yet survive, stamped on these lifeless things,
-The hand that mocked them, and the heart that fed;
-And on the pedestal, these words appear:
-My name is Ozymandias, King of Kings;
-Look on my Works, ye Mighty, and despair!
-Nothing beside remains. Round the decay
-Of that colossal Wreck, boundless and bare
-The lone and level sands stretch far away.”
+I work on algorithms late at night. I build simulators where two hundred thousand particles move in patterns. The system processes over eighteen hundred frames to show Chladni vibrations. I use recursive loops and Penrose tiling to create the visuals. The balls collide and follow the Fibonacci sequence. I use Blender geometry nodes and Lie algebra to control the camera movement. Eigen decomposition handles the zoom effect. AI generates the basic code, but I do the manual work to make it function. I enjoy the process of debugging and refining the logic. I write shaders in GLSL and use WebGL to render grids. I take photos of Hong Kong streets and create digital snow globes. I am now focusing more on emotions. I view this change as a global optimization problem. I try to stop overthinking and simply ask why things happen. I create simple animations with one color and share them online.

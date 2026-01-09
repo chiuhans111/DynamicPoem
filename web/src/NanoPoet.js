@@ -1,5 +1,5 @@
 import * as ort from 'onnxruntime-web';
-import config from './config.json';
+import config from '../../config.json';
 
 export class NanoPoet {
     constructor() {
@@ -20,19 +20,25 @@ export class NanoPoet {
             this.charToId[c] = i;
             this.idToChar[i] = c;
         });
-        this.idToChar[this.unkId] = "[UNK]";
+        this.idToChar[this.unkId] = "#";
     }
 
     async init() {
         // Load Model (Still needs to be async for ONNX)
         try {
-            // Using WASM execution provider
-            this.session = await ort.InferenceSession.create('/model.onnx', {
+            // Configure WASM paths to root (where vite-plugin-static-copy puts them)
+            ort.env.wasm.wasmPaths = "/";
+
+            // Import model path (handled by Vite assetsInclude)
+            const modelUrl = (await import('../../model.onnx')).default;
+            console.log("Loading model from:", modelUrl);
+
+            this.session = await ort.InferenceSession.create(modelUrl, {
                 executionProviders: ['wasm']
             });
         } catch (e) {
             console.error("Failed to load model.onnx:", e);
-            throw new Error("Could not load ONNX model");
+            throw new Error(`Could not load ONNX model: ${e.message}`);
         }
 
         return true;

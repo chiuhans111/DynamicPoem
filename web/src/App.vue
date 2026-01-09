@@ -1,60 +1,124 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { NanoPoet } from './NanoPoet';
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import { NanoPoet } from "./NanoPoet";
 
 const poet = new NanoPoet();
-const status = ref('Initializing...');
-const isReady = ref(false);
-const input = ref('the world is ');
-const output = ref('');
-const isRunning = ref(false);
+const input = ref("");
+
+const isFinished = ref(false);
+
+const status = ref("Initializing...");
+
+const width = 20;
+const height = 20;
+
+const N = width * height;
+
+let text = "#".repeat(N);
+const life = ref(new Array(N).fill(0));
+
+const loop = async () => {
+  try {
+    // update life
+    for (let i = 0; i < N; i++) {
+      life.value[i] += 0.1;
+    }
+
+    // when life is above a threshold, corresponding text will be replace with '#'
+    let new_text = "";
+    for (let i = 0; i < N; i++) {
+      if (life.value[i] > 1 && Math.random() < 0.01) {
+        new_text += "#";
+        life.value[i] = 0;
+      } else {
+        new_text += text[i];
+      }
+    }
+
+    // find subsequence length = poet.seqLen contains the most '#' and process that part
+
+    const margin = 3;
+    const M = poet.seqLen - margin * 2;
+    let count = 0;
+    let maxIndex = 0;
+    let maxValue = -1;
+
+    for (let i = 0; i < N; i++) {
+      if (new_text[i] === "#") count++;
+      if (i >= M && new_text[i - M] === "#") count--;
+      if (i >= M - 1 && count > maxValue) {
+        maxValue = count;
+        maxIndex = i - M + 1;
+      }
+    }
+
+    let maxIndex0 = maxIndex - margin;
+
+    let prefix = "";
+
+    while (maxIndex0 < 0) {
+      maxIndex0++;
+      prefix += " ";
+    }
+
+    const subsequence =
+      prefix + new_text.slice(maxIndex0, maxIndex + M + margin);
+    new_text = "";
+
+    const result = (await poet.predict(subsequence)).slice(margin);
+
+    for (let i = 0; i < M; i++) {
+      if (subsequence[i + margin] === "#" && result[i] !== "#") {
+        new_text += result[i];
+      } else {
+        new_text += text[i + maxIndex];
+      }
+    }
+
+    text = text.slice(0, maxIndex) + new_text + text.slice(maxIndex + M);
+
+    input.value = text;
+  } catch (e) {
+    status.value = "Inference Error: " + e.message;
+  }
+
+  // Schedule next iteration
+  if (!isFinished.value) setTimeout(loop, 0);
+};
 
 onMounted(async () => {
   try {
     await poet.init();
-    status.value = 'Ready';
-    isReady.value = true;
+    status.value = "Ready";
+    loop();
   } catch (e) {
-    status.value = 'Error: ' + e.message;
+    status.value = "Error: " + e.message;
   }
 });
 
-const runInference = async () => {
-  if (!isReady.value) return;
-  
-  isRunning.value = true;
-  output.value = 'Thinking...';
-  
-  try {
-    const result = await poet.predict(input.value);
-    output.value = result;
-  } catch (e) {
-    output.value = 'Error: ' + e.message;
-  } finally {
-    isRunning.value = false;
-  }
-};
+onBeforeUnmount(() => {
+  isFinished.value = true;
+});
 </script>
 
 <template>
   <div class="container">
-    <h1>NanoPoet (Vue Edition)</h1>
+    <h1>Nano Poem</h1>
     <div class="status" :class="{ error: status.startsWith('Error') }">
       Status: {{ status }}
     </div>
 
-    <div class="card">
-      <label>Prompt</label>
-      <textarea v-model="input" placeholder="Type your text here..."></textarea>
-      
-      <button @click="runInference" :disabled="!isReady || isRunning">
-        {{ isRunning ? 'Processing...' : 'Complete / Repair' }}
-      </button>
-    </div>
-
-    <div class="card output-card" v-if="output">
-      <label>Model Generation</label>
-      <div class="output-text">{{ output }}</div>
+    <div class="poem-grid">
+      <div v-for="i in height" :key="i" class="row">
+        <span
+          v-for="j in width"
+          :key="j"
+          class="char"
+          :style="{ opacity: life[(i - 1) * width + (j - 1)] + 0.1 }"
+        >
+          {{ input[(i - 1) * width + (j - 1)] }}
+        </span>
+      </div>
     </div>
   </div>
 </template>
@@ -64,7 +128,7 @@ const runInference = async () => {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Courier New", Courier, monospace;
 }
 
 h1 {
@@ -82,60 +146,10 @@ h1 {
   color: #e74c3c;
 }
 
-.card {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-  margin-bottom: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-label {
-  font-weight: bold;
-  color: #7f8c8d;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-}
-
-textarea {
-  width: 100%;
-  height: 100px;
-  padding: 1rem;
-  border: 1px solid #bdc3c7;
-  border-radius: 4px;
-  font-family: inherit;
-  font-size: 1rem;
-  resize: vertical;
-}
-
-button {
-  background: #2c3e50;
+.char {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
   color: white;
-  border: none;
-  padding: 1rem;
-  border-radius: 4px;
-  font-size: 1rem;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-button:hover:not(:disabled) {
-  background: #34495e;
-}
-
-button:disabled {
-  background: #95a5a6;
-  cursor: not-allowed;
-}
-
-.output-text {
-  white-space: pre-wrap;
-  line-height: 1.6;
-  font-size: 1.1rem;
-  color: #2c3e50;
 }
 </style>
