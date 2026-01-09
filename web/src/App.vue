@@ -150,6 +150,21 @@ const loop = async () => {
   if (!isFinished.value) setTimeout(loop, 0);
 };
 
+const handleTouchMove = (event) => {
+  // Get coordinates of the first touch point
+  const touch = event.touches[0];
+
+  // Find the element at those coordinates
+  const target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+  // Extract the index from the custom data attribute
+  const index = target?.getAttribute("data-index");
+
+  if (index !== null) {
+    life.value[Number(index)] = -1;
+  }
+};
+
 onMounted(async () => {
   try {
     await poet.init();
@@ -167,20 +182,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="container">
-    <div class="poem-grid">
+    <div class="poem-grid" @touchmove.prevent="handleTouchMove">
       <div v-for="i in height" :key="i" class="row">
         <span
           @mouseover="life[(i - 1) * width + (j - 1)] = -1"
           @touchstart="life[(i - 1) * width + (j - 1)] = -1"
-          @touchmove.prevent="
-            (e) => {
-              const el = document.elementFromPoint(
-                e.touches[0].clientX,
-                e.touches[0].clientY
-              );
-              if (el?.dataset?.index) life[el.dataset.index] = 0;
-            }
-          "
           :data-index="(i - 1) * width + (j - 1)"
           v-for="j in width"
           :key="j"
