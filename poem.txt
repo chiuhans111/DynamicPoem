@@ -1,7 +1,2 @@
-This artwork is made with a generative model.
-This generative model keeps predicting how to decode the character.
-This generative model is trained on it's own description.
-Hans Chiu is the author of this artwork.
-Roses are Red, Violets are Blue Unexpected # on line 42.
-The simulation is running. The particles are moving. The loop is infinite.
-The more you *understand* the chain of whys that eventually leads to happiness, the more power you have. But we often *think* about the chains of hows, and that doesn't always work.
+This artwork runs as a generative model that predicts characters in sequence, authored by Hans Chiu who engineers the system where roses are red, violets are blue, and an unexpected error on line 42 disrupts the flow while the simulation executes with particles shifting and the loop persisting eternally, embodying a cellular automaton in which the grid is text, cells are letters, and states are alphabet entries that predictions flip from corruption to order, mimicking waves and light as I traced the bug revealing how instincts wire deep and evolution overrides reason, with emotions optimizing globally while overthinking traps locally, for theory skips the wet part and you learn swimming in water where the model generates and the life evolves.
+

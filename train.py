@@ -18,7 +18,7 @@ VOCAB_SIZE = len(CHARS) + 1
 
 # Training Hyperparameters
 BATCH_SIZE = 128
-STEPS = 2000
+STEPS = 4000
 LEARNING_RATE = 1e-4
 
 # MODEL DEFINITION
