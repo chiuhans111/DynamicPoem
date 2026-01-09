@@ -27,7 +27,8 @@ export class NanoPoet {
         // Load Model (Still needs to be async for ONNX)
         try {
             // Configure WASM paths to root (where vite-plugin-static-copy puts them)
-            ort.env.wasm.wasmPaths = "/";
+            // Configure WASM paths (removed to allow relative resolution)
+            // ort.env.wasm.wasmPaths = "/";
 
             // Import model path (handled by Vite assetsInclude)
             const modelUrl = (await import('../../model.onnx')).default;
