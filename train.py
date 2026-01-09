@@ -3,6 +3,8 @@ import torch.nn as nn
 from transformers import GemmaConfig, GemmaForCausalLM
 import os
 import json
+import re
+import random
 
 # CONFIGURATION
 with open("./web/src/config.json", "r") as f:
@@ -15,9 +17,9 @@ CHARS = CONF["chars"]
 VOCAB_SIZE = len(CHARS) + 1
 
 # Training Hyperparameters
-BATCH_SIZE = 64
-STEPS = 1000
-LEARNING_RATE = 3e-4
+BATCH_SIZE = 128
+STEPS = 2000
+LEARNING_RATE = 1e-4
 
 # MODEL DEFINITION
 
@@ -51,6 +53,16 @@ if not os.path.exists(TEXT_FILE):
 with open(TEXT_FILE, 'r', encoding='utf-8') as f:
     text = f.read()
 
+filtered_text = ""
+
+for c in text:
+    if c in CHARS:
+        filtered_text += c
+    else:
+        filtered_text += " "
+text = re.sub(" +", " ", filtered_text)
+
+
 char_to_id = {c: i for i, c in enumerate(CHARS)}
 id_to_char = {i: c for i, c in enumerate(CHARS)}
 
@@ -71,7 +83,7 @@ def get_batch():
     # LOGIC: Corruption Strategy
     # Even for Causal LM, we can train it to "recover" correct text from noise
     # (given past context).
-    mask = torch.rand(x.shape).to(device) < 0.15
+    mask = torch.rand(x.shape).to(device) < random.random()*0.2
     noise = torch.randint(0, VOCAB_SIZE, x.shape).to(device)
     x[mask] = noise[mask]
 
@@ -93,7 +105,7 @@ for i in range(STEPS):
     loss.backward()
     optimizer.step()
 
-    if i % 50 == 0:
+    if i % 100 == 0:
         print(f"   Step {i:4d} | Loss: {loss.item():.4f}")
 
 # EXPORT TO ONNX

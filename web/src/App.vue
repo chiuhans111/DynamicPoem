@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from "vue";
 import { NanoPoet } from "./NanoPoet";
+import typeSoundUrl from "./assets/type.mp3";
 
 const poet = new NanoPoet();
 const input = ref("");
@@ -9,6 +10,41 @@ const isFinished = ref(false);
 
 const status = ref("Initializing...");
 
+const audio = new Audio(typeSoundUrl);
+audio.volume = 0.4;
+audio.preservesPitch = false;
+
+// Sound State
+let updatesInFrame = 0;
+let lastSoundTime = 0;
+const SOUND_COOLDOWN = 30; // ms
+
+const triggerSound = () => {
+  const now = Date.now();
+  // Only play if we have updates AND cooldown has passed
+  if (updatesInFrame > 0 && now - lastSoundTime > SOUND_COOLDOWN) {
+    // Calculate volume based on activity (clamped)
+    // Base 0.2, add 0.05 per update, max 0.8
+    const intensity = Math.min(1.0, updatesInFrame * 1e-2);
+
+    // Add jitter: +/- 0.1
+    const jitter = Math.random() * 0.2 + 0.8;
+    const finalVolume = intensity * jitter;
+
+    audio.volume = finalVolume;
+
+    // Randomize Pitch (playbackRate): 0.8 to 1.2
+    audio.playbackRate = 0.98 + Math.random() * 0.04;
+
+    // Reset and play
+    audio.currentTime = 0;
+    // if (audio.paused) audio.play().catch(() => {});
+
+    lastSoundTime = now + Math.random() * 10;
+    updatesInFrame = 0; // Reset accumulator
+  }
+};
+
 const width = 40;
 const height = 20;
 
@@ -16,7 +52,7 @@ const N = width * height;
 
 let text = "#".repeat(N);
 const life = ref(new Array(N).fill(0));
-const margin = 3;
+const margin = 6;
 const M = poet.seqLen - margin;
 
 let index0 = 0;
@@ -28,7 +64,7 @@ const loop = async () => {
       let accumulation = life.value[i];
       if (i > 0) accumulation += life.value[i - 1];
       if (i < N - 1) accumulation += life.value[i + 1];
-      life.value[i] = accumulation / 3 + 0.1;
+      life.value[i] = accumulation / 3 + 0.01;
     }
 
     // when life is above a threshold, corresponding text will be replace with '#'
@@ -37,7 +73,7 @@ const loop = async () => {
       if (life.value[i] > 1) {
         life.value[i] = 1;
       }
-      if (Math.random() > life.value[i] && Math.random() < 0.15) {
+      if (Math.random() > life.value[i] && Math.random() < 0.015) {
         new_text += "#";
       } else {
         new_text += text[i];
@@ -59,14 +95,14 @@ const loop = async () => {
       }
     }
 
-    if (count == 0) {
+    if (maxValue == 0) {
       maxIndex = index0;
-      index0 += 1;
+      index0 += 5;
       if (index0 > N - M) index0 = 0;
+      if (index0 < 0) index0 = N - M;
     }
 
     let maxIndex0 = maxIndex - margin;
-
     let prefix = "";
 
     while (maxIndex0 < 0) {
@@ -85,13 +121,23 @@ const loop = async () => {
     maxIndex = Math.max(0, Math.min(maxIndex, text.length - M));
     let replacement = "";
     for (let i = 0; i < M; i++) {
+      if (subsequence[i + margin] !== "#" && Math.random() < 0.8) {
+        replacement += text[maxIndex + i];
+        continue;
+      }
+
       if (result[i] !== "#") {
         replacement += result[i];
-        if (result[i] !== text[maxIndex + i]) life.value[maxIndex + i] = 0;
+        if (result[i] !== text[maxIndex + i]) {
+          life.value[maxIndex + i] = 0;
+          updatesInFrame++;
+        }
       } else {
         replacement += text[maxIndex + i];
       }
     }
+
+    triggerSound();
 
     text = text.slice(0, maxIndex) + replacement + text.slice(maxIndex + M);
 
@@ -101,7 +147,7 @@ const loop = async () => {
   }
 
   // Schedule next iteration
-  if (!isFinished.value) setTimeout(loop, 10);
+  if (!isFinished.value) setTimeout(loop, 0);
 };
 
 onMounted(async () => {
@@ -121,11 +167,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="container">
-    <h1>Poem Diffuser</h1>
-    <div class="status" :class="{ error: status.startsWith('Error') }">
-      Status: {{ status }}
-    </div>
-
     <div class="poem-grid">
       <div v-for="i in height" :key="i" class="row">
         <span
@@ -138,6 +179,11 @@ onBeforeUnmount(() => {
         </span>
       </div>
     </div>
+
+    <br />
+    <div class="status" :class="{ error: status.startsWith('Error') }">
+      Status: {{ status }}
+    </div>
   </div>
 </template>
 
@@ -146,28 +192,34 @@ onBeforeUnmount(() => {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
-  font-family: "Courier New", Courier, monospace;
+  font-family: monospace;
+  font-size: 15px;
 }
 
 h1 {
   text-align: center;
-  color: #2c3e50;
+  color: #3586d6;
 }
 
 .status {
   text-align: center;
   margin-bottom: 2rem;
   color: #666;
+  font-size: 6px;
 }
 
 .status.error {
   color: #e74c3c;
 }
 
+.row {
+  display: flex;
+}
+
 .char {
-  display: inline-block;
+  display: block;
   width: 10px;
-  height: 10px;
+  height: 20px;
   color: white;
 }
 </style>
