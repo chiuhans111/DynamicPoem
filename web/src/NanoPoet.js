@@ -27,8 +27,24 @@ export class NanoPoet {
         // Load Model (Still needs to be async for ONNX)
         try {
             // Configure WASM paths to root (where vite-plugin-static-copy puts them)
-            // Configure WASM paths (removed to allow relative resolution)
-            // ort.env.wasm.wasmPaths = "/";
+            // Configure WASM paths using robust URL resolution.
+            // We assume files are in 'assets/' folder relative to this script (or root in dev).
+            // Using `new URL` with `import.meta.url` ensures we get a full absolute URL 
+            // that works regardless of where the app is deployed (subdirectory etc).
+
+            const isDev = import.meta.env.DEV;
+            if (isDev) {
+                // In Dev, local memory server at root
+                ort.env.wasm.wasmPaths = "/assets/";
+            } else {
+                // In Prod, robustly determing the "current directory" of this script
+                // This script is bundled into 'assets/' folder.
+                // The WASM files are copied to the same 'assets/' folder.
+                // So we want the directory of *this* module.
+                const scriptUrl = import.meta.url;
+                const scriptDir = scriptUrl.substring(0, scriptUrl.lastIndexOf('/') + 1);
+                ort.env.wasm.wasmPaths = scriptDir;
+            }
 
             // Import model path (handled by Vite assetsInclude)
             const modelUrl = (await import('../../model.onnx')).default;
@@ -68,12 +84,8 @@ export class NanoPoet {
         let outputText = "";
 
         for (let i = 0; i < seqLen; i++) {
-            if (i === 0) {
-                outputText += this.idToChar[ids[i]] || "";
-                continue;
-            }
-
-            const logitsIdx = (i - 1) * this.vocabSize;
+            // Bidirectional/Masked Model: Logits at position [i] correspond to token at [i]
+            const logitsIdx = i * this.vocabSize;
             let maxVal = -Infinity;
             let bestId = 0;
 

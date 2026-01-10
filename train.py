@@ -1,5 +1,5 @@
 import torch
-
+import torch.nn as nn
 from transformers import GemmaConfig, GemmaModel
 
 import os
@@ -18,7 +18,7 @@ CHARS = CONF["chars"]
 VOCAB_SIZE = len(CHARS) + 1
 
 # Training Hyperparameters
-BATCH_SIZE = 64
+BATCH_SIZE = 128
 STEPS = 4000
 LEARNING_RATE = 1e-4
 
@@ -129,8 +129,8 @@ def get_batch():
     # LOGIC: Corruption Strategy
     # Even for Causal LM, we can train it to "recover" correct text from noise
     # (given past context).
-    mask1 = torch.rand(x.shape).to(device) < random.random()*0.2
-    mask2 = torch.rand(x.shape).to(device) < 0.5
+    mask1 = torch.rand(x.shape).to(device) < random.random()**2 * 0.9+0.01
+    mask2 = torch.rand(x.shape).to(device) < 0.2
     noise = torch.randint(0, VOCAB_SIZE, x.shape).to(device)
     noise[mask2] = VOCAB_SIZE-1
     x[mask1] = noise[mask1]

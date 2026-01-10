@@ -25,7 +25,7 @@ const triggerSound = () => {
   if (updatesInFrame > 0 && now - lastSoundTime > SOUND_COOLDOWN) {
     // Calculate volume based on activity (clamped)
     // Base 0.2, add 0.05 per update, max 0.8
-    const intensity = Math.min(1.0, updatesInFrame * 1e-2);
+    const intensity = Math.min(1.0, updatesInFrame * 1e-1);
 
     // Add jitter: +/- 0.1
     const jitter = Math.random() * 0.2 + 0.8;
@@ -38,7 +38,7 @@ const triggerSound = () => {
 
     // Reset and play
     audio.currentTime = 0;
-    // if (audio.paused) audio.play().catch(() => {});
+    if (audio.paused) audio.play().catch(() => {});
 
     lastSoundTime = now + Math.random() * 10;
     updatesInFrame = 0; // Reset accumulator
@@ -52,7 +52,7 @@ const N = width * height;
 
 let text = "#".repeat(N);
 const life = ref(new Array(N).fill(0));
-const margin = 6;
+const margin = 1;
 const M = poet.seqLen - margin;
 
 let index0 = 0;
@@ -73,8 +73,8 @@ const loop = async () => {
       if (life.value[i] > 1) {
         life.value[i] = 1;
       }
-      if (Math.random() > life.value[i] + 1 - 0.1) {
-        new_text += "#";
+      if (Math.random() > life.value[i] + 0.8) {
+        new_text += "aeiou#"[Math.floor(Math.random() * 6)];
       } else {
         new_text += text[i];
       }
@@ -210,8 +210,8 @@ onBeforeUnmount(() => {
   max-width: 400px;
   margin: 0 auto;
   padding: 2rem;
-  font-family: monospace;
-  font-size: 15px;
+  font-family: "Consolas", monospace;
+  font-size: 14px;
   margin-top: 5%;
 }
 
@@ -236,9 +236,12 @@ h1 {
 }
 
 .char {
+  position: relative;
   display: block;
   width: 10px;
   height: 20px;
   color: white;
+  background-color: rgb(0, 0, 0);
+  z-index: 99;
 }
 </style>
