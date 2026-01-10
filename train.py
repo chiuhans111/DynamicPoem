@@ -1,6 +1,7 @@
 import torch
-import torch.nn as nn
-from transformers import GemmaConfig, GemmaForCausalLM
+
+from transformers import GemmaConfig, GemmaModel
+
 import os
 import json
 import re
@@ -17,13 +18,58 @@ CHARS = CONF["chars"]
 VOCAB_SIZE = len(CHARS) + 1
 
 # Training Hyperparameters
-BATCH_SIZE = 128
+BATCH_SIZE = 64
 STEPS = 4000
 LEARNING_RATE = 1e-4
 
 # MODEL DEFINITION
 
-print(">>> Initializing")
+
+class BidirectionalGemma(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        # 1. Enable Bidirectional Attention in Config
+        config.use_bidirectional_attention = True
+
+        # 2. Base Transformer (The "Brain")
+        # We use GemmaModel instead of GemmaForCausalLM because we want
+        # to control the attention mask (allow it to see future tokens).
+        self.gemma = GemmaModel(config)
+
+        # 3. Output Head (The "Mouth")
+        # Since GemmaModel only gives us hidden vectors, we need this layer
+        # to convert them back into probabilities for our characters.
+        self.head = nn.Linear(config.hidden_size,
+                              config.vocab_size, bias=False)
+
+    def forward(self, input_ids, labels=None):
+        # Run the transformer
+        outputs = self.gemma(input_ids=input_ids)
+        hidden_states = outputs.last_hidden_state
+
+        # Project to vocab size
+        logits = self.head(hidden_states)
+
+        loss = None
+        if labels is not None:
+            # Standard CrossEntropyLoss for token prediction
+            loss_fct = nn.CrossEntropyLoss()
+            # Flatten predictions and targets for loss calculation
+            loss = loss_fct(logits.view(-1, config.vocab_size),
+                            labels.view(-1))
+
+        # Return a namespace object similar to what HF models return,
+        # so the rest of your code works seamlessly.
+        from transformers.modeling_outputs import CausalLMOutput
+        return CausalLMOutput(
+            loss=loss,
+            logits=logits,
+            hidden_states=outputs.hidden_states,
+            attentions=outputs.attentions
+        )
+
+
+print(">>> Initializing Bidirectional Gemma")
 
 config = GemmaConfig(
     vocab_size=VOCAB_SIZE,
@@ -34,10 +80,10 @@ config = GemmaConfig(
     num_key_value_heads=CONF["numHeads"],
     max_position_embeddings=512,
     hidden_act="gelu",
-    attn_implementation="eager"
+    attn_implementation="eager"  # Eager attention is often simpler for custom masks
 )
 
-model = GemmaForCausalLM(config)
+model = BidirectionalGemma(config)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(f"   Using device: {device}")
 model.to(device)
@@ -83,9 +129,11 @@ def get_batch():
     # LOGIC: Corruption Strategy
     # Even for Causal LM, we can train it to "recover" correct text from noise
     # (given past context).
-    mask = torch.rand(x.shape).to(device) < random.random()*0.2
+    mask1 = torch.rand(x.shape).to(device) < random.random()*0.2
+    mask2 = torch.rand(x.shape).to(device) < 0.5
     noise = torch.randint(0, VOCAB_SIZE, x.shape).to(device)
-    x[mask] = noise[mask]
+    noise[mask2] = VOCAB_SIZE-1
+    x[mask1] = noise[mask1]
 
     return x, y
 
