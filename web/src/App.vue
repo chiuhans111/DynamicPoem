@@ -61,7 +61,7 @@ const loop = async () => {
   try {
     // update life
     for (let i = 0; i < N; i++) {
-      let accumulation = 0.01;
+      let accumulation = 0.05;
       if (i > 0) accumulation += (life.value[i - 1] - life.value[i]) * 0.1;
       if (i < N - 1) accumulation += (life.value[i + 1] - life.value[i]) * 0.1;
       life.value[i] += accumulation;
@@ -73,8 +73,10 @@ const loop = async () => {
       if (life.value[i] > 1) {
         life.value[i] = 1;
       }
-      if (Math.random() > life.value[i] + 0.8) {
-        new_text += "aeiou#"[Math.floor(Math.random() * 6)];
+      if (Math.random() > life.value[i] + 0.7) {
+        if (life.value[i] > 0)
+          new_text += "aeiou"[Math.floor(Math.random() * 5)];
+        else new_text += "#";
       } else {
         new_text += text[i];
       }
@@ -147,7 +149,7 @@ const loop = async () => {
   }
 
   // Schedule next iteration
-  if (!isFinished.value) setTimeout(loop, 0);
+  if (!isFinished.value) setTimeout(loop, 5);
 };
 
 const handleTouchMove = (event) => {
